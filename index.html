@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeQuest Bomber — Retos de programación</title>
+<style>
+:root{--grass:#6fc45b;--tile:#40d7f4;--tile2:#21bde7;--red:#ff2850;--wood:#b98145;--ink:#172033;--cream:#f4ecd8;--gold:#ffd44d}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(circle at top,#31415b,#111827 70%);min-height:100vh}
+#app{max-width:1180px;margin:auto;padding:18px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(24px,4vw,34px);text-shadow:0 3px #0004}
+.stats{display:flex;gap:8px;flex-wrap:wrap}.pill{background:#26344d;padding:9px 13px;border-radius:999px;border:1px solid #ffffff20}
+.panel{background:var(--cream);color:#1d2430;border-radius:18px;padding:16px;margin-top:14px;box-shadow:0 12px 30px #0003}
+.levels{display:flex;gap:8px;overflow:auto;padding:2px 2px 10px}.lv{min-width:42px;height:42px;border:0;border-radius:12px;background:#d8d0bd;cursor:pointer;font-weight:800}.lv.active{background:#f0a52b;color:white;box-shadow:0 3px #bb7415}.lv.done{background:#65a86e;color:white}.lv:disabled{opacity:.5;cursor:not-allowed}
+h2{margin:4px 0 8px}.hint{background:#fff7dd;padding:10px;border-left:5px solid #f0a52b;border-radius:8px;margin-top:8px}
+.game{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:16px;margin-top:14px}
+.board{background:#d6e7dc;border-radius:16px;padding:10px;overflow:hidden;border:3px solid #a3b5a9}
+.grid{display:grid;gap:3px;max-width:640px;margin:auto;background:#43a94c;padding:4px;border-radius:10px}
+.cell{aspect-ratio:1;min-width:0;border-radius:5px;background:linear-gradient(145deg,#52e3fa,#1ebcde);display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.5vw,28px);position:relative;box-shadow:inset 0 -3px #138bb522;overflow:hidden}
+.cell:before{content:"";position:absolute;inset:auto 0 0;height:18%;background:#47bd59;opacity:.65}
+.wall{background:repeating-linear-gradient(135deg,#b57a42,#b57a42 7px,#d09a5e 7px,#d09a5e 14px);box-shadow:inset 0 -4px #8a572e}
+.wall:before{background:#8b5c31}.hard{background:linear-gradient(145deg,#536579,#344357);box-shadow:inset 0 -4px #263448}.hard:before{background:#25364b}
+.goal{background:linear-gradient(145deg,#ffe979,#ffbf35)}.hero{background:linear-gradient(145deg,#fff0b8,#ffc65b);animation:bob .55s infinite alternate;z-index:1}.enemy{background:linear-gradient(145deg,#ff8ba0,#ed345a);animation:wiggle .45s infinite alternate}.bomb{background:radial-gradient(circle at 35% 30%,#6c7788,#202a38 65%);animation:pulse .45s infinite alternate}.blast{background:#ff9b30!important;animation:flash .18s alternate 3}
+
+/* Nuevo Estilo Visual para la Moneda */
+.cell .coin-icon {
+  width: 68%;
+  height: 68%;
+  background: radial-gradient(circle at 35% 35%, #fff6a1, #ffd700 60%, #d49b00 100%);
+  border-radius: 50%;
+  border: 2px solid #b37d00;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  animation: coinFloat 1.2s ease-in-out infinite alternate;
+}
+.cell .coin-icon::after {
+  content: "★";
+  color: #b37d00;
+  font-size: 0.7em;
+  font-weight: bold;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+@keyframes coinFloat {
+  from { transform: translateY(2px) rotateY(0deg); }
+  to { transform: translateY(-4px) rotateY(25deg); }
+}
+
+.cell .emoji{position:relative;z-index:2;filter:drop-shadow(0 2px 1px #0003)}
+@keyframes bob{from{transform:translateY(1px)}to{transform:translateY(-3px)}}@keyframes wiggle{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}@keyframes pulse{from{transform:scale(.82)}to{transform:scale(1)}}@keyframes flash{from{background:#fff45e}to{background:#ff4c24}}
+.editor{margin-top:12px}.editor label{display:block;margin-bottom:7px}.editor textarea{width:100%;min-height:180px;resize:vertical;border:2px solid #526275;border-radius:12px;padding:13px;background:#111827;color:#d9f99d;font:15px/1.55 monospace;outline:none}.editor textarea:focus{border-color:#f0a52b}
+.syntax{margin-top:8px;font-size:13px;color:#526275;line-height:2}.syntax code{background:#eef2f5;padding:4px 6px;border-radius:5px;white-space:nowrap}
+.code{background:#111827;color:#d9f99d;border-radius:14px;padding:14px;min-height:145px;font-family:monospace;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #344054}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{border:0;border-radius:10px;padding:11px 13px;cursor:pointer;font-weight:800;background:#2d6cdf;color:white}.actions button.secondary{background:#667085}.actions button:disabled{opacity:.45;cursor:not-allowed}
+.message{min-height:44px;font-weight:700;margin-top:10px;line-height:1.4}.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:#3c4857;margin:10px 0 0}.legend span{white-space:nowrap}
+.commandbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#c9a16d;padding:9px;border-radius:10px;margin-bottom:10px;box-shadow:inset 0 -5px #8c6039}.cmdtile{width:42px;height:42px;display:grid;place-items:center;background:#f5e7bb;border:3px solid #f6c54a;font-size:23px;box-shadow:0 2px #8b6037}
+.small{font-size:13px;color:#56616e}
+@media(max-width:780px){#app{padding:10px}.game{grid-template-columns:1fr}.cell{font-size:20px}.panel{padding:12px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top"><h1>💣 CodeQuest Bomber</h1><div class="stats"><span class="pill">⭐ Puntos: <b id="score">0</b></span><span class="pill">🏅 Misiones: <b id="done">0</b>/8</span><span class="pill">💣 Bombas: <b id="bombs">0</b></span></div></div>
+  <div class="panel">
+    <div class="levels" id="levels"></div>
+    <h2 id="title"></h2><p id="desc"></p>
+    <div class="hint" id="hint"></div>
+    <div class="hint">🧠 <b>Programa la aventura:</b> escribe las instrucciones en orden y pulsa <b>Ejecutar</b>. Las bombas explotan en cruz; destruyen cajas y pueden eliminar monstruos. ¡No te quedes junto a una bomba!</div>
+    <div class="game">
+      <div class="board">
+        <div class="commandbar"><div class="cmdtile">➡️</div><div class="cmdtile">⬇️</div><div class="cmdtile">⬅️</div><div class="cmdtile">⬆️</div><div class="cmdtile">💣</div><div class="cmdtile">⏳</div></div>
+        <div class="grid" id="grid"></div>
+        <div class="legend"><span>🧙 Tú</span><span>🪵 Caja destructible</span><span>🧱 Muro fijo</span><span>💣 Bomba</span><span>🪙 Moneda</span><span>🏁 Salida</span></div>
+        <div class="editor"><label for="codeInput"><b>⌨️ Escribe tu código</b></label><textarea id="codeInput" spellcheck="false" aria-label="Editor de código" placeholder="// Ejemplo:\nmoveRight(3);\nplantBomb();\nmoveDown(2);\nmoveLeft();"></textarea>
+        <div class="syntax">Comandos: <code>moveRight(n)</code> <code>moveLeft(n)</code> <code>moveUp(n)</code> <code>moveDown(n)</code> <code>plantBomb()</code> <code>wait()</code></div></div>
+      </div>
+      <div><h3>🧩 Tu programa</h3><div class="code" id="code">Tu programa aparecerá aquí cuando ejecutes la misión.</div>
+        <div class="actions"><button id="run">▶ Ejecutar</button><button id="clear" class="secondary">↺ Reiniciar</button><button id="next">Siguiente misión ➜</button></div>
+        <div class="message" id="msg" aria-live="polite"></div>
+        <div class="hint"><b>Reglas de Bomber:</b><br>• <code>plantBomb()</code> deja una bomba en tu casilla.<br>• <code>wait()</code> hace explotar la última bomba y activa la animación.<br>• Las explosiones se extienden hasta 2 casillas, pero se detienen en muros y cajas.<br>• Toca la salida 🏁 después de recoger la moneda 🪙.</div>
+        <p class="small">Consejo: Puedes indicar cuántas casillas moverte, por ejemplo <code>moveRight(3)</code> o <code>moverDerecha(2)</code>. Puedes seguir usando <code>repetir(3){moveRight()}</code>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const levels=[
+{t:"Misión 1: ¡Rompe la caja!",d:"Destruye la caja que bloquea el camino y llega a la salida.",h:"Coloca una bomba junto a la caja, aléjate y después usa wait().",rows:5,cols:7,start:[2,0],goal:[2,6],coin:[1,5],walls:[[2,2]],hard:[[0,3],[1,3],[3,3],[4,3]],bombRange:2},
+{t:"Misión 2: El pasillo secreto",d:"Abre el camino entre las cajas, recoge la moneda y escapa.",h:"Las cajas se rompen, pero los muros grises son indestructibles.",rows:6,cols:8,start:[5,0],goal:[0,7],coin:[0,6],walls:[[4,1],[4,2],[3,4],[2,4],[1,4]],hard:[[0,2],[1,2],[2,2],[5,3],[5,4]],bombRange:2},
+{t:"Misión 3: Monstruo en el jardín",d:"Elimina al monstruo con una explosión y llega a la salida.",h:"La explosión debe alcanzar al monstruo. ¡Coloca la bomba y escapa antes de esperar!",rows:6,cols:8,start:[5,0],goal:[0,7],coin:[0,6],enemy:[3,4],walls:[[4,2],[3,2],[2,2],[3,5]],hard:[[1,3],[2,3],[4,5],[5,5]],bombRange:2},
+{t:"Misión 4: Dos cajas",d:"Despeja el camino y consigue la moneda escondida.",h:"Una bomba puede romper varias cajas alineadas, pero el alcance es limitado.",rows:6,cols:8,start:[5,0],goal:[0,7],coin:[1,6],walls:[[4,1],[3,1],[2,1],[2,3],[2,4],[2,5]],hard:[[0,3],[1,3],[3,3],[4,5],[5,5]],bombRange:2},
+{t:"Misión 5: El cruce peligroso",d:"Busca una ruta entre las cajas para alcanzar la salida.",h:"Planifica una ruta de escape antes de detonar una bomba.",rows:7,cols:9,start:[6,0],goal:[0,8],coin:[0,7],walls:[[5,1],[4,1],[3,1],[3,3],[3,4],[3,5],[2,7]],hard:[[6,2],[5,5],[4,5],[2,3],[1,3]],bombRange:2},
+{t:"Misión 6: Caza monstruos",d:"Derrota al monstruo, recoge la moneda y escapa.",h:"Las cajas bloquean la explosión. Busca una línea libre hacia el enemigo.",rows:7,cols:9,start:[6,0],goal:[0,8],coin:[1,7],enemy:[2,6],walls:[[5,1],[4,1],[3,1],[4,4],[3,4],[2,4],[3,6]],hard:[[6,2],[5,5],[4,7],[2,2],[1,2]],bombRange:2},
+{t:"Misión 7: El laberinto explosivo",d:"Abre la ruta correcta sin quedarte atrapado.",h:"Usa los pasillos. Las explosiones se detienen al llegar a una caja o muro.",rows:7,cols:9,start:[6,0],goal:[0,8],coin:[0,7],walls:[[5,1],[4,1],[3,1],[3,3],[4,3],[5,3],[1,5],[2,5],[3,5],[3,7]],hard:[[6,2],[2,2],[1,2],[5,6],[4,6]],bombRange:2},
+{t:"Misión 8: Gran desafío Bomber",d:"Combina movimiento, bombas, estrategia, moneda y salida.",h:"¡Piensa como programador! Tu código debe abrir el camino y llevarte a la meta.",rows:8,cols:10,start:[7,0],goal:[0,9],coin:[0,8],enemy:[2,7],walls:[[6,1],[5,1],[4,1],[4,3],[4,4],[4,5],[2,5],[3,5],[2,7]],hard:[[7,2],[6,4],[5,7],[4,8],[2,2],[1,2]],bombRange:2}
+];
+let current=0,score=0,completed=new Set(),busy=false;
+const $=id=>document.getElementById(id);
+let state;
+function fresh(){const l=levels[current];return {p:[...l.start],walls:l.walls.map(a=>[...a]),bombs:[],coin:false,enemy:!!l.enemy,enemyPos:l.enemy?[...l.enemy]:null,won:false}}
+function renderLevels(){$("levels").innerHTML=levels.map((l,i)=>`<button class="lv ${i===current?'active':''} ${completed.has(i)?'done':''}" data-i="${i}" ${i>0&&!completed.has(i-1)?'disabled':''}>${completed.has(i)?'✓':i+1}</button>`).join("");document.querySelectorAll(".lv").forEach(b=>{if(!b.disabled)b.onclick=()=>{current=+b.dataset.i;load()}})}
+function load(){state=fresh();$("codeInput").value="";$("title").textContent=levels[current].t;$("desc").textContent=levels[current].d;$("hint").textContent="💡 "+levels[current].h;$("msg").textContent="";$("next").disabled=!completed.has(current)||current===levels.length-1;renderLevels();draw();showCode();updateStats()}
+function updateStats(){$("score").textContent=score;$("done").textContent=completed.size;$("bombs").textContent=state.bombs.length}
+function posEq(a,b){return a&&b&&a[0]===b[0]&&a[1]===b[1]}
+function inBounds(p){const l=levels[current];return p[0]>=0&&p[0]<l.rows&&p[1]>=0&&p[1]<l.cols}
+function hardAt(p){return levels[current].hard.some(w=>posEq(w,p))}
+function wallAt(p){return state.walls.some(w=>posEq(w,p))}
+function draw(blasts=[]){const l=levels[current],g=$("grid");g.style.gridTemplateColumns=`repeat(${l.cols},1fr)`;g.innerHTML="";
+for(let r=0;r<l.rows;r++)for(let c=0;c<l.cols;c++){let p=[r,c],el=document.createElement("div");el.className="cell";let emoji="", isCoin=false;
+if(hardAt(p)){el.classList.add("hard");emoji="🧱"}else if(wallAt(p)){el.classList.add("wall");emoji="🪵"}
+if(posEq(l.goal,p)){el.classList.add("goal");emoji="🏁"}
+if(posEq(l.coin,p)&&!state.coin){isCoin=true;}
+if(state.enemy&&posEq(state.enemyPos,p)){el.classList.add("enemy");emoji="👾"}
+if(state.bombs.some(b=>posEq(b,p))){el.classList.add("bomb");emoji="💣"}
+if(blasts.some(b=>posEq(b,p))){el.classList.add("blast");emoji="💥"}
+if(posEq(state.p,p)){el.classList.add("hero");emoji="🧙"}
+
+if(isCoin && !posEq(state.p,p)){
+  let coinEl=document.createElement("div");
+  coinEl.className="coin-icon";
+  el.appendChild(coinEl);
+} else if(emoji){
+  let s=document.createElement("span");
+  s.className="emoji";
+  s.textContent=emoji;
+  el.appendChild(s);
+}
+g.appendChild(el)}
+updateStats()}
+function showCode(){$("code").textContent=$("codeInput").value.trim()||"Tu programa aparecerá aquí cuando ejecutes la misión."}
+
+function parseProgram(){
+  let raw=$("codeInput").value.replace(/\/\/.*$/gm,"").trim();
+  if(!raw) return {error:"Escribe al menos una instrucción."};
+  
+  const baseCmds={
+    "moveright":"R","moveleft":"L","moveup":"U","movedown":"D","plantbomb":"B","wait":"W",
+    "moverderecha":"R","moverizquierda":"L","moverarriba":"U","moverabajo":"D","ponerbomba":"B","esperar":"W"
+  };
+
+  function parseLine(cmdStr){
+    cmdStr = cmdStr.trim();
+    let m = cmdStr.match(/^([a-zA-Z]+)(?:\((\d*)\))?$/);
+    if(m){
+      let name = m[1].toLowerCase();
+      let count = m[2] !== undefined && m[2] !== "" ? parseInt(m[2], 10) : 1;
+      if(baseCmds[name]){
+        return Array(count).fill(baseCmds[name]);
+      }
+    }
+    return null;
+  }
+
+  let lines=raw.split(/\n|;/).map(s=>s.trim()).filter(Boolean), out=[];
+  for(let i=0; i<lines.length; i++){
+    let line=lines[i].replace(/\s+/g,"");
+    
+    let res = parseLine(line);
+    if(res){
+      out.push(...res);
+      continue;
+    }
+    
+    let m = line.match(/^repetir\((\d+)\)\{(.+)\}$/i);
+    if(m){
+      let inner = m[2].split(",").map(x=>x.trim().replace(/;$/,""));
+      let innerCmds = [];
+      let ok = true;
+      for(let x of inner){
+        let parsedX = parseLine(x);
+        if(!parsedX){ ok=false; break; }
+        innerCmds.push(...parsedX);
+      }
+      if(!ok) return {error:`Línea ${i+1}: comando no reconocido dentro de repetir().`};
+      
+      let repeatCount = Math.min(20, parseInt(m[1], 10));
+      for(let n=0; n<repeatCount; n++) out.push(...innerCmds);
+      continue;
+    }
+    
+    return {error:`Línea ${i+1}: comando no reconocido "${lines[i]}". Revisa los paréntesis y parámetros.`};
+  }
+  return {program:out};
+}
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function run(){if(busy)return;let parsed=parseProgram();if(parsed.error){$("msg").textContent="❌ "+parsed.error;return}busy=true;$("run").disabled=true;state=fresh();draw();$("msg").textContent="🚀 Ejecutando tu programa...";
+let program=parsed.program,planted=[];
+for(let i=0;i<program.length;i++){await sleep(260);let cmd=program[i],p=[...state.p];
+if("RLUD".includes(cmd)){if(cmd==="R")p[1]++;if(cmd==="L")p[1]--;if(cmd==="U")p[0]--;if(cmd==="D")p[0]++;
+if(!inBounds(p)||hardAt(p)||wallAt(p)){ $("msg").textContent=`🧱 Paso ${i+1}: hay un obstáculo. Reinicia y cambia la ruta.`;busy=false;$("run").disabled=false;return}
+if(state.bombs.some(b=>posEq(b,p))){$("msg").textContent="💣 ¡No puedes caminar sobre una bomba!";busy=false;$("run").disabled=false;return}
+state.p=p;if(posEq(p,levels[current].coin))state.coin=true;
+}else if(cmd==="B"){if(state.bombs.some(b=>posEq(b,state.p))){$("msg").textContent="Ya hay una bomba en esta casilla.";busy=false;$("run").disabled=false;return}state.bombs.push([...state.p]);planted.push([...state.p])}
+else if(cmd==="W"){if(!state.bombs.length){$("msg").textContent="⏳ No hay ninguna bomba que detonar. Usa plantBomb() primero.";busy=false;$("run").disabled=false;return}
+let blast=[];for(let b of state.bombs){blast.push([...b]);for(let [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]])for(let k=1;k<=levels[current].bombRange;k++){let q=[b[0]+dr*k,b[1]+dc*k];if(!inBounds(q)||hardAt(q))break;blast.push(q);if(wallAt(q)){state.walls=state.walls.filter(w=>!posEq(w,q));break}}}
+if(state.enemy&&blast.some(b=>posEq(b,state.enemyPos)))state.enemy=false;
+if(blast.some(b=>posEq(b,state.p))){draw(blast);$("msg").textContent="💥 ¡La explosión te alcanzó! Reinicia y aléjate antes de wait().";busy=false;$("run").disabled=false;return}
+state.bombs=[];draw(blast);await sleep(350)}
+draw()}
+const l=levels[current],goal=posEq(state.p,l.goal),enemyOK=!l.enemy||!state.enemy;
+if(goal&&(!l.coin||state.coin)&&enemyOK&&state.bombs.length===0){if(!completed.has(current)){completed.add(current);score+=100}$("msg").textContent="🎉 ¡Misión completada! +100 puntos. ¡Excelente programación!";$("next").disabled=current===levels.length-1;renderLevels()}
+else if(goal)$("msg").textContent="🏁 Llegaste a la salida, pero falta recoger la moneda, derrotar al monstruo o detonar las bombas.";
+else $("msg").textContent="🔎 El programa terminó. Aún no llegas a la salida: ajusta tu secuencia.";
+busy=false;$("run").disabled=false;updateStats()}
+function reset() {if(busy)return;state=fresh();draw();$("msg").textContent="";showCode()}
+$("codeInput").addEventListener("input",showCode);$("run").onclick=run;$("clear").onclick=reset;$("next").onclick=()=>{if(current<levels.length-1&&completed.has(current)){current++;load()}};
+load();
+</script>
+</body></html>
